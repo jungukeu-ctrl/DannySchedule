@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danny's Weekly Schedule</title>
+<style>
+  :root {
+    --bg: #EEF1EA;
+    --bg-elevated: #FFFFFF;
+    --ink: #22303A;
+    --ink-soft: #5B6A64;
+    --border: #D9DED2;
+    --gridline: #E4E8DC;
+    --accent: #34557A;
+    --accent-soft: #E1E9F0;
+
+    --care-bg: #ECE7DA;   --care-ink: #6B5A32;
+    --eng-bg:  #E1EAF7;   --eng-ink:  #29517F;
+    --pia-bg:  #EAE2F5;   --pia-ink:  #6A4593;
+    --tkd-bg:  #F8E1D6;   --tkd-ink:  #B0451F;
+    --pc-bg:   #DCF0EA;   --pc-ink:   #1B7A6A;
+    --nn-bg:   #E2F0DD;   --nn-ink:   #3B7A36;
+    --hj-bg:   #F3E5CC;   --hj-ink:   #8A5A16;
+    --sw-bg:   #D9EDF3;   --sw-ink:   #196E8C;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1A211C;
+      --bg-elevated: #232B24;
+      --ink: #E9ECE3;
+      --ink-soft: #A7B1A2;
+      --border: #3A4437;
+      --gridline: #333C31;
+      --accent: #8FB0D6;
+      --accent-soft: #2A3B4E;
+
+      --care-bg: #473C22;  --care-ink: #EFE1BC;
+      --eng-bg:  #253E5D;  --eng-ink:  #CBE0F7;
+      --pia-bg:  #3A2C53;  --pia-ink:  #E4D8F5;
+      --tkd-bg:  #533022;  --tkd-ink:  #F5D6C4;
+      --pc-bg:   #1B4740;  --pc-ink:   #C4EFE4;
+      --nn-bg:   #2C4527;  --nn-ink:   #D2E9CB;
+      --hj-bg:   #4B3714;  --hj-ink:   #F0D9A6;
+      --sw-bg:   #1C4450;  --sw-ink:   #C2E5EF;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1A211C;
+    --bg-elevated: #232B24;
+    --ink: #E9ECE3;
+    --ink-soft: #A7B1A2;
+    --border: #3A4437;
+    --gridline: #333C31;
+    --accent: #8FB0D6;
+    --accent-soft: #2A3B4E;
+
+    --care-bg: #473C22;  --care-ink: #EFE1BC;
+    --eng-bg:  #253E5D;  --eng-ink:  #CBE0F7;
+    --pia-bg:  #3A2C53;  --pia-ink:  #E4D8F5;
+    --tkd-bg:  #533022;  --tkd-ink:  #F5D6C4;
+    --pc-bg:   #1B4740;  --pc-ink:   #C4EFE4;
+    --nn-bg:   #2C4527;  --nn-ink:   #D2E9CB;
+    --hj-bg:   #4B3714;  --hj-ink:   #F0D9A6;
+    --sw-bg:   #1C4450;  --sw-ink:   #C2E5EF;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", "Segoe UI", sans-serif;
+    padding: 32px 20px 56px;
+  }
+
+  .page {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  .hero {
+    margin-bottom: 22px;
+    animation: rise 0.5s ease both;
+  }
+
+  .eyebrow {
+    margin: 0 0 6px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: Georgia, "Noto Serif KR", serif;
+    font-size: clamp(28px, 5vw, 38px);
+    margin: 0 0 8px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 20px 0 22px;
+    padding: 14px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    animation: rise 0.5s ease 0.05s both;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
+  }
+
+  .timetable-wrap {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow-x: auto;
+    animation: rise 0.5s ease 0.1s both;
+  }
+
+  .timetable {
+    display: flex;
+    min-width: 640px;
+  }
+
+  .time-axis {
+    flex: 0 0 60px;
+    position: sticky;
+    left: 0;
+    background: var(--bg-elevated);
+    z-index: 2;
+    border-right: 1px solid var(--border);
+  }
+
+  .axis-head {
+    height: 68px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .axis-track {
+    position: relative;
+    height: 624px;
+  }
+
+  .axis-label {
+    position: absolute;
+    left: 0;
+    right: 6px;
+    transform: translateY(-50%);
+    text-align: right;
+    font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .day-col {
+    flex: 1 1 0;
+    min-width: 108px;
+    border-right: 1px solid var(--border);
+  }
+
+  .day-col:last-child { border-right: none; }
+
+  .day-head {
+    height: 68px;
+    padding: 10px 10px 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .day-name {
+    font-family: Georgia, "Noto Serif KR", serif;
+    font-size: 17px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .today-badge {
+    display: none;
+    font-family: -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--bg-elevated);
+    background: var(--accent);
+    padding: 1px 6px;
+    border-radius: 20px;
+  }
+
+  .day-col.is-today .today-badge { display: inline-block; }
+  .day-col.is-today .day-head { background: var(--accent-soft); }
+
+  .dismiss {
+    font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .day-track {
+    position: relative;
+    height: 624px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--gridline) 0,
+      var(--gridline) 1px,
+      transparent 1px,
+      transparent 48px
+    );
+  }
+
+  .block {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    border-radius: 8px;
+    padding: 5px 7px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.25;
+  }
+
+  .block .name {
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .block .time {
+    font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 10.5px;
+    opacity: 0.85;
+  }
+
+  .cat-care { background: var(--care-bg); color: var(--care-ink); }
+  .cat-eng  { background: var(--eng-bg);  color: var(--eng-ink); }
+  .cat-pia  { background: var(--pia-bg);  color: var(--pia-ink); }
+  .cat-tkd  { background: var(--tkd-bg);  color: var(--tkd-ink); }
+  .cat-pc   { background: var(--pc-bg);   color: var(--pc-ink); }
+  .cat-nn   { background: var(--nn-bg);   color: var(--nn-ink); }
+  .cat-hj   { background: var(--hj-bg);   color: var(--hj-ink); }
+  .cat-sw   { background: var(--sw-bg);   color: var(--sw-ink); }
+
+  .now-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #D6432E;
+    z-index: 3;
+  }
+
+  .now-line::before {
+    content: "";
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #D6432E;
+  }
+
+  .note {
+    margin-top: 18px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero, .legend, .timetable-wrap { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">초등학교 3학년 · 방과후 시간표</p>
+    <h1>Danny's Weekly Schedule</h1>
+    <p class="sub">월요일부터 금요일까지, 하교 후 학원 일정을 한눈에 확인하세요.</p>
+  </header>
+
+  <div class="legend" id="legend">
+    <div class="legend-item"><span class="dot" style="background:var(--care-ink)"></span>학교돌봄</div>
+    <div class="legend-item"><span class="dot" style="background:var(--eng-ink)"></span>영어</div>
+    <div class="legend-item"><span class="dot" style="background:var(--pia-ink)"></span>피아노</div>
+    <div class="legend-item"><span class="dot" style="background:var(--tkd-ink)"></span>태권도</div>
+    <div class="legend-item"><span class="dot" style="background:var(--pc-ink)"></span>방과후(컴퓨터)</div>
+    <div class="legend-item"><span class="dot" style="background:var(--nn-ink)"></span>눈높이</div>
+    <div class="legend-item"><span class="dot" style="background:var(--hj-ink)"></span>방과후(한자)</div>
+    <div class="legend-item"><span class="dot" style="background:var(--sw-ink)"></span>수영</div>
+  </div>
+
+  <div class="timetable-wrap">
+    <div class="timetable">
+
+      <div class="time-axis">
+        <div class="axis-head"></div>
+        <div class="axis-track" id="axisTrack">
+          <div class="axis-label" style="top:0%">13:00</div>
+          <div class="axis-label" style="top:7.69%">13:30</div>
+          <div class="axis-label" style="top:15.38%">14:00</div>
+          <div class="axis-label" style="top:23.08%">14:30</div>
+          <div class="axis-label" style="top:30.77%">15:00</div>
+          <div class="axis-label" style="top:38.46%">15:30</div>
+          <div class="axis-label" style="top:46.15%">16:00</div>
+          <div class="axis-label" style="top:53.85%">16:30</div>
+          <div class="axis-label" style="top:61.54%">17:00</div>
+          <div class="axis-label" style="top:69.23%">17:30</div>
+          <div class="axis-label" style="top:76.92%">18:00</div>
+          <div class="axis-label" style="top:84.62%">18:30</div>
+          <div class="axis-label" style="top:92.31%">19:00</div>
+          <div class="axis-label" style="top:100%">19:30</div>
+        </div>
+      </div>
+
+      <div class="day-col" data-day="mon">
+        <div class="day-head" data-day="mon">
+          <div class="day-name">월 <span class="today-badge">오늘</span></div>
+          <div class="dismiss">하교 13:40</div>
+        </div>
+        <div class="day-track" data-day="mon">
+          <div class="block cat-care" style="top:10.26%;height:20.51%">
+            <div class="name">학교돌봄</div><div class="time">13:40–15:00</div>
+          </div>
+          <div class="block cat-eng" style="top:35.90%;height:25.64%">
+            <div class="name">영어</div><div class="time">15:20–16:40</div>
+          </div>
+          <div class="block cat-pia" style="top:61.54%;height:15.38%">
+            <div class="name">피아노</div><div class="time">17:00–18:00</div>
+          </div>
+          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
+            <div class="name">태권도</div><div class="time">18:00–19:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-col" data-day="tue">
+        <div class="day-head" data-day="tue">
+          <div class="day-name">화 <span class="today-badge">오늘</span></div>
+          <div class="dismiss">하교 14:30</div>
+        </div>
+        <div class="day-track" data-day="tue">
+          <div class="block cat-care" style="top:23.08%;height:12.82%">
+            <div class="name">돌봄</div><div class="time">14:30–15:20</div>
+          </div>
+          <div class="block cat-eng" style="top:35.90%;height:25.64%">
+            <div class="name">영어</div><div class="time">15:20–16:40</div>
+          </div>
+          <div class="block cat-pia" style="top:61.54%;height:15.38%">
+            <div class="name">피아노</div><div class="time">17:00–18:00</div>
+          </div>
+          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
+            <div class="name">태권도</div><div class="time">18:00–19:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-col" data-day="wed">
+        <div class="day-head" data-day="wed">
+          <div class="day-name">수 <span class="today-badge">오늘</span></div>
+          <div class="dismiss">하교 13:40</div>
+        </div>
+        <div class="day-track" data-day="wed">
+          <div class="block cat-pc" style="top:17.95%;height:38.46%">
+            <div class="name">방과후(컴퓨터)</div><div class="time">14:10–16:40</div>
+          </div>
+          <div class="block cat-nn" style="top:61.54%;height:10.26%">
+            <div class="name">눈높이</div><div class="time">17:00–17:40</div>
+          </div>
+          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
+            <div class="name">태권도</div><div class="time">18:00–19:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-col" data-day="thu">
+        <div class="day-head" data-day="thu">
+          <div class="day-name">목 <span class="today-badge">오늘</span></div>
+          <div class="dismiss">하교 13:40</div>
+        </div>
+        <div class="day-track" data-day="thu">
+          <div class="block cat-care" style="top:10.26%;height:20.51%">
+            <div class="name">학교돌봄</div><div class="time">13:40–15:00</div>
+          </div>
+          <div class="block cat-eng" style="top:35.90%;height:25.64%">
+            <div class="name">영어</div><div class="time">15:20–16:40</div>
+          </div>
+          <div class="block cat-pia" style="top:61.54%;height:15.38%">
+            <div class="name">피아노</div><div class="time">17:00–18:00</div>
+          </div>
+          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
+            <div class="name">태권도</div><div class="time">18:00–19:00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-col" data-day="fri">
+        <div class="day-head" data-day="fri">
+          <div class="day-name">금 <span class="today-badge">오늘</span></div>
+          <div class="dismiss">하교 13:40</div>
+        </div>
+        <div class="day-track" data-day="fri">
+          <div class="block cat-care" style="top:10.26%;height:15.38%">
+            <div class="name">돌봄</div><div class="time">13:40–14:40</div>
+          </div>
+          <div class="block cat-hj" style="top:25.64%;height:20.51%">
+            <div class="name">방과후(한자)</div><div class="time">14:40–16:00</div>
+          </div>
+          <div class="block cat-nn" style="top:48.72%;height:12.82%">
+            <div class="name">눈높이</div><div class="time">16:10–17:00</div>
+          </div>
+          <div class="block cat-sw" style="top:69.23%;height:28.21%">
+            <div class="name">수영</div><div class="time">17:30–19:20</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="note">※ 학원 이동 시간을 고려해 도착 시간을 여유 있게 확인해 주세요. 빨간 선은 현재 시각을 나타냅니다(오늘 요일에만 표시).</p>
+
+</div>
+
+<script>
+  (function () {
+    var dayMap = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
+
+    function paintNow() {
+      var existing = document.querySelector('.now-line');
+      if (existing) existing.remove();
+
+      var now = new Date();
+      var todayKey = dayMap[now.getDay()];
+      if (!todayKey) return;
+
+      document.querySelectorAll('[data-day="' + todayKey + '"]').forEach(function (el) {
+        el.classList.add('is-today');
+      });
+
+      var minutesSince13 = (now.getHours() * 60 + now.getMinutes()) - 780;
+      if (minutesSince13 < 0 || minutesSince13 > 390) return;
+
+      var track = document.querySelector('.day-track[data-day="' + todayKey + '"]');
+      if (!track) return;
+
+      var pct = (minutesSince13 / 390) * 100;
+      var line = document.createElement('div');
+      line.className = 'now-line';
+      line.style.top = pct + '%';
+      track.appendChild(line);
+    }
+
+    paintNow();
+    setInterval(paintNow, 60000);
+  })();
+</script>
+</body>
+</html>

@@ -8,12 +8,16 @@
   :root {
     --bg: #EEF1EA;
     --bg-elevated: #FFFFFF;
+    --bg-sunken: #F4F6F0;
     --ink: #22303A;
     --ink-soft: #5B6A64;
     --border: #D9DED2;
     --gridline: #E4E8DC;
     --accent: #34557A;
+    --accent-ink: #FFFFFF;
     --accent-soft: #E1E9F0;
+    --danger: #B0452C;
+    --overlay: rgba(20, 24, 20, 0.45);
 
     --care-bg: #ECE7DA;   --care-ink: #6B5A32;
     --eng-bg:  #E1EAF7;   --eng-ink:  #29517F;
@@ -23,18 +27,23 @@
     --nn-bg:   #E2F0DD;   --nn-ink:   #3B7A36;
     --hj-bg:   #F3E5CC;   --hj-ink:   #8A5A16;
     --sw-bg:   #D9EDF3;   --sw-ink:   #196E8C;
+    --etc-bg:  #E7E9E2;   --etc-ink:  #464F45;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #1A211C;
       --bg-elevated: #232B24;
+      --bg-sunken: #1F2621;
       --ink: #E9ECE3;
       --ink-soft: #A7B1A2;
       --border: #3A4437;
       --gridline: #333C31;
       --accent: #8FB0D6;
+      --accent-ink: #12202F;
       --accent-soft: #2A3B4E;
+      --danger: #E38868;
+      --overlay: rgba(6, 8, 6, 0.6);
 
       --care-bg: #473C22;  --care-ink: #EFE1BC;
       --eng-bg:  #253E5D;  --eng-ink:  #CBE0F7;
@@ -44,18 +53,23 @@
       --nn-bg:   #2C4527;  --nn-ink:   #D2E9CB;
       --hj-bg:   #4B3714;  --hj-ink:   #F0D9A6;
       --sw-bg:   #1C4450;  --sw-ink:   #C2E5EF;
+      --etc-bg:  #333B33;  --etc-ink:  #D7DCD1;
     }
   }
 
   :root[data-theme="dark"] {
     --bg: #1A211C;
     --bg-elevated: #232B24;
+    --bg-sunken: #1F2621;
     --ink: #E9ECE3;
     --ink-soft: #A7B1A2;
     --border: #3A4437;
     --gridline: #333C31;
     --accent: #8FB0D6;
+    --accent-ink: #12202F;
     --accent-soft: #2A3B4E;
+    --danger: #E38868;
+    --overlay: rgba(6, 8, 6, 0.6);
 
     --care-bg: #473C22;  --care-ink: #EFE1BC;
     --eng-bg:  #253E5D;  --eng-ink:  #CBE0F7;
@@ -65,6 +79,7 @@
     --nn-bg:   #2C4527;  --nn-ink:   #D2E9CB;
     --hj-bg:   #4B3714;  --hj-ink:   #F0D9A6;
     --sw-bg:   #1C4450;  --sw-ink:   #C2E5EF;
+    --etc-bg:  #333B33;  --etc-ink:  #D7DCD1;
   }
 
   * { box-sizing: border-box; }
@@ -77,8 +92,22 @@
     padding: 32px 20px 56px;
   }
 
+  button, input, select {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .page {
-    max-width: 920px;
+    max-width: 960px;
     margin: 0 auto;
   }
 
@@ -109,16 +138,134 @@
     font-size: 15px;
   }
 
-  .legend {
+  /* ---------- Week bar ---------- */
+
+  .week-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 14px;
-    margin: 20px 0 22px;
-    padding: 14px 16px;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0 14px;
+    padding: 12px 14px;
     background: var(--bg-elevated);
     border: 1px solid var(--border);
     border-radius: 12px;
     animation: rise 0.5s ease 0.05s both;
+  }
+
+  .week-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px;
+  }
+
+  .week-tab {
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 18px;
+  }
+
+  .week-tab.active {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .nav-arrow {
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .nav-arrow:hover { background: var(--bg-sunken); }
+
+  .week-range-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .week-range {
+    font-family: Georgia, "Noto Serif KR", serif;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  .badge.custom {
+    background: var(--care-bg);
+    color: var(--care-ink);
+  }
+
+  .week-bar-spacer { flex: 1 1 auto; }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    border-radius: 9px;
+    padding: 8px 13px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--ink-soft);
+  }
+
+  .btn-ghost:hover { color: var(--ink); background: var(--bg-sunken); }
+
+  .hint {
+    margin: 0 0 20px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  /* ---------- Legend ---------- */
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 0 0 16px;
+    padding: 12px 16px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
   }
 
   .legend-item {
@@ -135,6 +282,8 @@
     border-radius: 3px;
     flex: none;
   }
+
+  /* ---------- Timetable ---------- */
 
   .timetable-wrap {
     background: var(--bg-elevated);
@@ -159,13 +308,13 @@
   }
 
   .axis-head {
-    height: 68px;
+    height: 72px;
     border-bottom: 1px solid var(--border);
   }
 
   .axis-track {
     position: relative;
-    height: 624px;
+    height: 720px;
   }
 
   .axis-label {
@@ -182,15 +331,15 @@
 
   .day-col {
     flex: 1 1 0;
-    min-width: 108px;
+    min-width: 118px;
     border-right: 1px solid var(--border);
   }
 
   .day-col:last-child { border-right: none; }
 
   .day-head {
-    height: 68px;
-    padding: 10px 10px 8px;
+    height: 72px;
+    padding: 9px 10px 8px;
     border-bottom: 1px solid var(--border);
     display: flex;
     flex-direction: column;
@@ -198,13 +347,19 @@
     gap: 3px;
   }
 
-  .day-name {
-    font-family: Georgia, "Noto Serif KR", serif;
-    font-size: 17px;
-    font-weight: 700;
+  .day-name-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 6px;
+    font-family: Georgia, "Noto Serif KR", serif;
+  }
+
+  .day-name { font-size: 17px; font-weight: 700; }
+  .day-date {
+    font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    color: var(--ink-soft);
   }
 
   .today-badge {
@@ -212,8 +367,7 @@
     font-family: -apple-system, sans-serif;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.02em;
-    color: var(--bg-elevated);
+    color: var(--accent-ink);
     background: var(--accent);
     padding: 1px 6px;
     border-radius: 20px;
@@ -231,32 +385,51 @@
 
   .day-track {
     position: relative;
-    height: 624px;
+    height: 720px;
     background-image: repeating-linear-gradient(
       to bottom,
       var(--gridline) 0,
       var(--gridline) 1px,
       transparent 1px,
-      transparent 48px
+      transparent 45px
     );
+  }
+
+  .day-empty-hint {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   .block {
     position: absolute;
-    left: 4px;
-    right: 4px;
     border-radius: 8px;
-    padding: 5px 7px;
+    padding: 5px 18px 5px 7px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 1px;
     line-height: 1.25;
+    cursor: grab;
+    touch-action: none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.02);
   }
+
+  .block:active { cursor: grabbing; }
+  .block.dragging { opacity: 0.85; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
 
   .block .name {
     font-size: 12px;
     font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .block .time {
@@ -266,6 +439,9 @@
     opacity: 0.85;
   }
 
+  .block.compact { padding-top: 3px; padding-bottom: 3px; }
+  .block.compact .time { display: none; }
+
   .cat-care { background: var(--care-bg); color: var(--care-ink); }
   .cat-eng  { background: var(--eng-bg);  color: var(--eng-ink); }
   .cat-pia  { background: var(--pia-bg);  color: var(--pia-ink); }
@@ -274,6 +450,37 @@
   .cat-nn   { background: var(--nn-bg);   color: var(--nn-ink); }
   .cat-hj   { background: var(--hj-bg);   color: var(--hj-ink); }
   .cat-sw   { background: var(--sw-bg);   color: var(--sw-ink); }
+  .cat-etc  { background: var(--etc-bg);  color: var(--etc-ink); }
+
+  .resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7px;
+    cursor: ns-resize;
+  }
+  .resize-top { top: 0; }
+  .resize-bottom { bottom: 0; }
+
+  .del-btn {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.12);
+    color: inherit;
+    font-size: 10px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0.55;
+  }
+  .del-btn:hover { opacity: 1; background: rgba(0,0,0,0.22); }
 
   .now-line {
     position: absolute;
@@ -301,13 +508,99 @@
     color: var(--ink-soft);
   }
 
+  /* ---------- Modal ---------- */
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 20;
+  }
+
+  .modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 380px;
+    padding: 20px;
+    animation: pop 0.16s ease both;
+  }
+
+  .modal h2 {
+    margin: 0 0 16px;
+    font-family: Georgia, "Noto Serif KR", serif;
+    font-size: 19px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 13px;
+  }
+
+  .field label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .field input, .field select {
+    border: 1px solid var(--border);
+    background: var(--bg-sunken);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .field-row {
+    display: flex;
+    gap: 10px;
+  }
+  .field-row .field { flex: 1; }
+
+  .form-error {
+    font-size: 12.5px;
+    color: var(--danger);
+    margin: -4px 0 12px;
+    min-height: 16px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .modal-actions .right { display: flex; gap: 8px; }
+
+  .btn-danger {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--danger);
+  }
+  .btn-danger:hover { background: var(--care-bg); }
+
   @keyframes rise {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.96) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .hero, .legend, .timetable-wrap { animation: none; }
+    .hero, .week-bar, .timetable-wrap, .modal { animation: none; }
   }
 </style>
 </head>
@@ -317,8 +610,29 @@
   <header class="hero">
     <p class="eyebrow">초등학교 3학년 · 방과후 시간표</p>
     <h1>Danny's Weekly Schedule</h1>
-    <p class="sub">월요일부터 금요일까지, 하교 후 학원 일정을 한눈에 확인하세요.</p>
+    <p class="sub">주차를 선택해 그 주만의 일정으로 조정하세요. 기본값은 항상 정상 시간표입니다.</p>
   </header>
+
+  <div class="week-bar">
+    <div class="week-tabs">
+      <button class="week-tab" id="tabThisWeek" type="button">이번 주</button>
+      <button class="week-tab" id="tabNextWeek" type="button">다음 주</button>
+    </div>
+    <button class="nav-arrow" id="prevWeek" type="button" aria-label="이전 주">‹</button>
+    <div class="week-range-group">
+      <span class="week-range" id="weekRange"></span>
+      <span class="badge" id="weekBadge"></span>
+      <span class="badge custom" id="customBadge" style="display:none">수정됨</span>
+    </div>
+    <button class="nav-arrow" id="nextWeek" type="button" aria-label="다음 주">›</button>
+    <div class="week-bar-spacer"></div>
+    <div class="toolbar-actions">
+      <button class="btn btn-ghost" id="resetWeekBtn" type="button">정상 시간표로 초기화</button>
+      <button class="btn btn-primary" id="addEventBtn" type="button">+ 일정 추가</button>
+    </div>
+  </div>
+
+  <p class="hint">카드를 드래그하면 시간·요일이 바뀌고, 위/아래 끝을 늘이면 시간 길이가 바뀝니다. 카드를 클릭하면 정확한 시간으로 직접 수정할 수 있어요.</p>
 
   <div class="legend" id="legend">
     <div class="legend-item"><span class="dot" style="background:var(--care-ink)"></span>학교돌봄</div>
@@ -329,172 +643,579 @@
     <div class="legend-item"><span class="dot" style="background:var(--nn-ink)"></span>눈높이</div>
     <div class="legend-item"><span class="dot" style="background:var(--hj-ink)"></span>방과후(한자)</div>
     <div class="legend-item"><span class="dot" style="background:var(--sw-ink)"></span>수영</div>
+    <div class="legend-item"><span class="dot" style="background:var(--etc-ink)"></span>기타</div>
   </div>
 
   <div class="timetable-wrap">
-    <div class="timetable">
-
+    <div class="timetable" id="timetable">
       <div class="time-axis">
         <div class="axis-head"></div>
-        <div class="axis-track" id="axisTrack">
-          <div class="axis-label" style="top:0%">13:00</div>
-          <div class="axis-label" style="top:7.69%">13:30</div>
-          <div class="axis-label" style="top:15.38%">14:00</div>
-          <div class="axis-label" style="top:23.08%">14:30</div>
-          <div class="axis-label" style="top:30.77%">15:00</div>
-          <div class="axis-label" style="top:38.46%">15:30</div>
-          <div class="axis-label" style="top:46.15%">16:00</div>
-          <div class="axis-label" style="top:53.85%">16:30</div>
-          <div class="axis-label" style="top:61.54%">17:00</div>
-          <div class="axis-label" style="top:69.23%">17:30</div>
-          <div class="axis-label" style="top:76.92%">18:00</div>
-          <div class="axis-label" style="top:84.62%">18:30</div>
-          <div class="axis-label" style="top:92.31%">19:00</div>
-          <div class="axis-label" style="top:100%">19:30</div>
-        </div>
+        <div class="axis-track" id="axisTrack"></div>
       </div>
-
-      <div class="day-col" data-day="mon">
-        <div class="day-head" data-day="mon">
-          <div class="day-name">월 <span class="today-badge">오늘</span></div>
-          <div class="dismiss">하교 13:40</div>
-        </div>
-        <div class="day-track" data-day="mon">
-          <div class="block cat-care" style="top:10.26%;height:20.51%">
-            <div class="name">학교돌봄</div><div class="time">13:40–15:00</div>
-          </div>
-          <div class="block cat-eng" style="top:35.90%;height:25.64%">
-            <div class="name">영어</div><div class="time">15:20–16:40</div>
-          </div>
-          <div class="block cat-pia" style="top:61.54%;height:15.38%">
-            <div class="name">피아노</div><div class="time">17:00–18:00</div>
-          </div>
-          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
-            <div class="name">태권도</div><div class="time">18:00–19:00</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="day-col" data-day="tue">
-        <div class="day-head" data-day="tue">
-          <div class="day-name">화 <span class="today-badge">오늘</span></div>
-          <div class="dismiss">하교 14:30</div>
-        </div>
-        <div class="day-track" data-day="tue">
-          <div class="block cat-care" style="top:23.08%;height:12.82%">
-            <div class="name">돌봄</div><div class="time">14:30–15:20</div>
-          </div>
-          <div class="block cat-eng" style="top:35.90%;height:25.64%">
-            <div class="name">영어</div><div class="time">15:20–16:40</div>
-          </div>
-          <div class="block cat-pia" style="top:61.54%;height:15.38%">
-            <div class="name">피아노</div><div class="time">17:00–18:00</div>
-          </div>
-          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
-            <div class="name">태권도</div><div class="time">18:00–19:00</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="day-col" data-day="wed">
-        <div class="day-head" data-day="wed">
-          <div class="day-name">수 <span class="today-badge">오늘</span></div>
-          <div class="dismiss">하교 13:40</div>
-        </div>
-        <div class="day-track" data-day="wed">
-          <div class="block cat-pc" style="top:17.95%;height:38.46%">
-            <div class="name">방과후(컴퓨터)</div><div class="time">14:10–16:40</div>
-          </div>
-          <div class="block cat-nn" style="top:61.54%;height:10.26%">
-            <div class="name">눈높이</div><div class="time">17:00–17:40</div>
-          </div>
-          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
-            <div class="name">태권도</div><div class="time">18:00–19:00</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="day-col" data-day="thu">
-        <div class="day-head" data-day="thu">
-          <div class="day-name">목 <span class="today-badge">오늘</span></div>
-          <div class="dismiss">하교 13:40</div>
-        </div>
-        <div class="day-track" data-day="thu">
-          <div class="block cat-care" style="top:10.26%;height:20.51%">
-            <div class="name">학교돌봄</div><div class="time">13:40–15:00</div>
-          </div>
-          <div class="block cat-eng" style="top:35.90%;height:25.64%">
-            <div class="name">영어</div><div class="time">15:20–16:40</div>
-          </div>
-          <div class="block cat-pia" style="top:61.54%;height:15.38%">
-            <div class="name">피아노</div><div class="time">17:00–18:00</div>
-          </div>
-          <div class="block cat-tkd" style="top:76.92%;height:15.38%">
-            <div class="name">태권도</div><div class="time">18:00–19:00</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="day-col" data-day="fri">
-        <div class="day-head" data-day="fri">
-          <div class="day-name">금 <span class="today-badge">오늘</span></div>
-          <div class="dismiss">하교 13:40</div>
-        </div>
-        <div class="day-track" data-day="fri">
-          <div class="block cat-care" style="top:10.26%;height:15.38%">
-            <div class="name">돌봄</div><div class="time">13:40–14:40</div>
-          </div>
-          <div class="block cat-hj" style="top:25.64%;height:20.51%">
-            <div class="name">방과후(한자)</div><div class="time">14:40–16:00</div>
-          </div>
-          <div class="block cat-nn" style="top:48.72%;height:12.82%">
-            <div class="name">눈높이</div><div class="time">16:10–17:00</div>
-          </div>
-          <div class="block cat-sw" style="top:69.23%;height:28.21%">
-            <div class="name">수영</div><div class="time">17:30–19:20</div>
-          </div>
-        </div>
-      </div>
-
+      <div class="day-col" data-day="mon"><div class="day-head" data-day="mon"></div><div class="day-track" data-day="mon"></div></div>
+      <div class="day-col" data-day="tue"><div class="day-head" data-day="tue"></div><div class="day-track" data-day="tue"></div></div>
+      <div class="day-col" data-day="wed"><div class="day-head" data-day="wed"></div><div class="day-track" data-day="wed"></div></div>
+      <div class="day-col" data-day="thu"><div class="day-head" data-day="thu"></div><div class="day-track" data-day="thu"></div></div>
+      <div class="day-col" data-day="fri"><div class="day-head" data-day="fri"></div><div class="day-track" data-day="fri"></div></div>
     </div>
   </div>
 
-  <p class="note">※ 학원 이동 시간을 고려해 도착 시간을 여유 있게 확인해 주세요. 빨간 선은 현재 시각을 나타냅니다(오늘 요일에만 표시).</p>
+  <p class="note">※ 이 브라우저에만 저장됩니다(다른 기기·브라우저와 공유되지 않아요). 빨간 선은 오늘, 지금 시각을 나타냅니다.</p>
 
 </div>
 
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">일정 추가</h2>
+    <div class="field">
+      <label for="fName">이름</label>
+      <input type="text" id="fName" maxlength="20" placeholder="예: 태권도 보강">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="fCat">분류</label>
+        <select id="fCat"></select>
+      </div>
+      <div class="field">
+        <label for="fDay">요일</label>
+        <select id="fDay">
+          <option value="mon">월요일</option>
+          <option value="tue">화요일</option>
+          <option value="wed">수요일</option>
+          <option value="thu">목요일</option>
+          <option value="fri">금요일</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="fStart">시작 시간</label>
+        <input type="time" id="fStart" step="600">
+      </div>
+      <div class="field">
+        <label for="fEnd">종료 시간</label>
+        <input type="time" id="fEnd" step="600">
+      </div>
+    </div>
+    <div class="form-error" id="formError"></div>
+    <div class="modal-actions">
+      <div class="left">
+        <button class="btn btn-danger" id="deleteBtn" type="button" style="display:none">삭제</button>
+      </div>
+      <div class="right">
+        <button class="btn btn-ghost" id="cancelBtn" type="button">취소</button>
+        <button class="btn btn-primary" id="saveBtn" type="button">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  (function () {
-    var dayMap = { 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri' };
+(function () {
+  "use strict";
 
-    function paintNow() {
-      var existing = document.querySelector('.now-line');
-      if (existing) existing.remove();
+  var DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+  var DAY_LABELS = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금' };
+  var DISMISS = { mon: '13:40', tue: '14:30', wed: '13:40', thu: '13:40', fri: '13:40' };
+  var CATS = {
+    care: '학교돌봄', eng: '영어', pia: '피아노', tkd: '태권도',
+    pc: '방과후(컴퓨터)', nn: '눈높이', hj: '방과후(한자)', sw: '수영', etc: '기타'
+  };
 
-      var now = new Date();
-      var todayKey = dayMap[now.getDay()];
-      if (!todayKey) return;
+  var DAY_START = 720;   // 12:00
+  var DAY_END = 1200;    // 20:00
+  var PX_PER_MIN = 1.5;
+  var SNAP = 10;
+  var MIN_DUR = 10;
 
-      document.querySelectorAll('[data-day="' + todayKey + '"]').forEach(function (el) {
-        el.classList.add('is-today');
+  var DEFAULT_EVENTS = [
+    { day: 'mon', cat: 'care', name: '학교돌봄', start: 820, end: 900 },
+    { day: 'mon', cat: 'eng', name: '영어', start: 920, end: 1000 },
+    { day: 'mon', cat: 'pia', name: '피아노', start: 1020, end: 1080 },
+    { day: 'mon', cat: 'tkd', name: '태권도', start: 1080, end: 1140 },
+
+    { day: 'tue', cat: 'care', name: '학교돌봄', start: 870, end: 920 },
+    { day: 'tue', cat: 'eng', name: '영어', start: 920, end: 1000 },
+    { day: 'tue', cat: 'pia', name: '피아노', start: 1020, end: 1080 },
+    { day: 'tue', cat: 'tkd', name: '태권도', start: 1080, end: 1140 },
+
+    { day: 'wed', cat: 'pc', name: '방과후(컴퓨터)', start: 850, end: 1000 },
+    { day: 'wed', cat: 'nn', name: '눈높이', start: 1020, end: 1060 },
+    { day: 'wed', cat: 'tkd', name: '태권도', start: 1080, end: 1140 },
+
+    { day: 'thu', cat: 'care', name: '학교돌봄', start: 820, end: 900 },
+    { day: 'thu', cat: 'eng', name: '영어', start: 920, end: 1000 },
+    { day: 'thu', cat: 'pia', name: '피아노', start: 1020, end: 1080 },
+    { day: 'thu', cat: 'tkd', name: '태권도', start: 1080, end: 1140 },
+
+    { day: 'fri', cat: 'care', name: '학교돌봄', start: 820, end: 880 },
+    { day: 'fri', cat: 'hj', name: '방과후(한자)', start: 880, end: 960 },
+    { day: 'fri', cat: 'nn', name: '눈높이', start: 970, end: 1020 },
+    { day: 'fri', cat: 'sw', name: '수영', start: 1050, end: 1160 }
+  ];
+
+  var STORAGE_KEY = 'dannySchedule.weeks.v1';
+
+  /* ---------- date / time helpers ---------- */
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function minToClock(m) { return pad2(Math.floor(m / 60)) + ':' + pad2(m % 60); }
+  function clockToMin(str) {
+    var parts = str.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function mondayOf(date) {
+    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    var day = d.getDay();
+    var diff = (day === 0) ? -6 : (1 - day);
+    d.setDate(d.getDate() + diff);
+    return d;
+  }
+  function addDays(d, n) {
+    var r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+  function isoDate(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function sameDate(a, b) { return isoDate(a) === isoDate(b); }
+
+  function weekRangeLabel(monday) {
+    var fri = addDays(monday, 4);
+    var y = monday.getFullYear();
+    if (monday.getMonth() === fri.getMonth()) {
+      return y + '년 ' + (monday.getMonth() + 1) + '월 ' + monday.getDate() + '일 – ' + fri.getDate() + '일';
+    }
+    return y + '년 ' + (monday.getMonth() + 1) + '월 ' + monday.getDate() + '일 – ' + (fri.getMonth() + 1) + '월 ' + fri.getDate() + '일';
+  }
+
+  /* ---------- storage ---------- */
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch (e) { return {}; }
+  }
+  function saveStore() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
+    catch (e) { /* storage unavailable — edits stay in-memory for this session */ }
+  }
+
+  var idSeq = 0;
+  function makeId() { idSeq += 1; return 'e' + Date.now().toString(36) + idSeq; }
+
+  function cloneDefaultEvents() {
+    return DEFAULT_EVENTS.map(function (e) {
+      return { id: makeId(), day: e.day, cat: e.cat, name: e.name, start: e.start, end: e.end };
+    });
+  }
+
+  var store = loadStore();
+
+  function getWeekData(weekKey) {
+    if (!store[weekKey]) {
+      store[weekKey] = { events: cloneDefaultEvents(), customized: false };
+      saveStore();
+    }
+    return store[weekKey];
+  }
+
+  /* ---------- state ---------- */
+
+  var today = new Date();
+  var thisMonday = mondayOf(today);
+  var currentMonday = mondayOf(today);
+
+  /* ---------- overlap layout ---------- */
+
+  function layoutDay(events) {
+    var sorted = events.slice().sort(function (a, b) { return a.start - b.start || a.end - b.end; });
+    var lanesEnd = [];
+    var withLane = sorted.map(function (ev) {
+      var lane = lanesEnd.findIndex(function (end) { return end <= ev.start; });
+      if (lane === -1) { lane = lanesEnd.length; lanesEnd.push(ev.end); }
+      else { lanesEnd[lane] = ev.end; }
+      var copy = {};
+      for (var k in ev) copy[k] = ev[k];
+      copy.lane = lane;
+      return copy;
+    });
+    var groups = [], curGroup = [], curEnd = -Infinity;
+    withLane.forEach(function (ev) {
+      if (curGroup.length && ev.start >= curEnd) { groups.push(curGroup); curGroup = []; curEnd = -Infinity; }
+      curGroup.push(ev);
+      curEnd = Math.max(curEnd, ev.end);
+    });
+    if (curGroup.length) groups.push(curGroup);
+    groups.forEach(function (g) {
+      var maxLane = Math.max.apply(null, g.map(function (e) { return e.lane; }));
+      g.forEach(function (e) { e.laneCount = maxLane + 1; });
+    });
+    return withLane;
+  }
+
+  /* ---------- rendering ---------- */
+
+  var axisTrack = document.getElementById('axisTrack');
+  var timetable = document.getElementById('timetable');
+
+  function buildAxis() {
+    axisTrack.innerHTML = '';
+    for (var t = DAY_START; t <= DAY_END; t += 30) {
+      var pct = ((t - DAY_START) / (DAY_END - DAY_START)) * 100;
+      var el = document.createElement('div');
+      el.className = 'axis-label';
+      el.style.top = pct + '%';
+      el.textContent = minToClock(t);
+      axisTrack.appendChild(el);
+    }
+  }
+
+  function weekKeyOf(monday) { return isoDate(monday); }
+
+  function render() {
+    var weekKey = weekKeyOf(currentMonday);
+    var weekData = getWeekData(weekKey);
+
+    document.getElementById('tabThisWeek').classList.toggle('active', weekKey === weekKeyOf(thisMonday));
+    document.getElementById('tabNextWeek').classList.toggle('active', weekKey === weekKeyOf(addDays(thisMonday, 7)));
+    document.getElementById('weekRange').textContent = weekRangeLabel(currentMonday);
+
+    var wb = document.getElementById('weekBadge');
+    var diffWeeks = Math.round((currentMonday - thisMonday) / (7 * 86400000));
+    if (diffWeeks === 0) { wb.textContent = '이번 주'; wb.style.display = ''; }
+    else if (diffWeeks === 1) { wb.textContent = '다음 주'; wb.style.display = ''; }
+    else if (diffWeeks === -1) { wb.textContent = '지난 주'; wb.style.display = ''; }
+    else { wb.style.display = 'none'; }
+
+    document.getElementById('customBadge').style.display = weekData.customized ? '' : 'none';
+
+    var byDay = {};
+    DAY_KEYS.forEach(function (d) { byDay[d] = []; });
+    weekData.events.forEach(function (ev) { byDay[ev.day].push(ev); });
+
+    DAY_KEYS.forEach(function (d, i) {
+      var date = addDays(currentMonday, i);
+      var head = document.querySelector('.day-head[data-day="' + d + '"]');
+      var col = document.querySelector('.day-col[data-day="' + d + '"]');
+      var track = document.querySelector('.day-track[data-day="' + d + '"]');
+      var isToday = sameDate(date, today);
+      col.classList.toggle('is-today', isToday);
+
+      head.innerHTML =
+        '<div class="day-name-row"><span class="day-name">' + DAY_LABELS[d] + '</span>' +
+        '<span class="day-date">' + (date.getMonth() + 1) + '.' + pad2(date.getDate()) + '</span>' +
+        '<span class="today-badge">오늘</span></div>' +
+        '<div class="dismiss">하교 ' + DISMISS[d] + '</div>';
+
+      track.innerHTML = '';
+      var laidOut = layoutDay(byDay[d]);
+      if (laidOut.length === 0) {
+        var hint = document.createElement('div');
+        hint.className = 'day-empty-hint';
+        hint.textContent = '일정 없음';
+        track.appendChild(hint);
+      }
+      laidOut.forEach(function (ev) {
+        var top = ((ev.start - DAY_START) / (DAY_END - DAY_START)) * 720;
+        var height = ((ev.end - ev.start) / (DAY_END - DAY_START)) * 720;
+        var leftPct = (ev.lane / ev.laneCount) * 100;
+        var widthPct = 100 / ev.laneCount;
+
+        var card = document.createElement('div');
+        card.className = 'block cat-' + ev.cat + ((ev.end - ev.start) < 25 ? ' compact' : '');
+        card.dataset.id = ev.id;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.style.top = top + 'px';
+        card.style.height = Math.max(height, 15) + 'px';
+        card.style.left = 'calc(' + leftPct + '% + 3px)';
+        card.style.width = 'calc(' + widthPct + '% - 6px)';
+
+        card.innerHTML =
+          '<div class="name">' + escapeHtml(ev.name) + '</div>' +
+          '<div class="time">' + minToClock(ev.start) + '–' + minToClock(ev.end) + '</div>' +
+          '<button class="del-btn" type="button" aria-label="삭제" data-del="' + ev.id + '">×</button>' +
+          '<div class="resize-handle resize-top" data-resize="top"></div>' +
+          '<div class="resize-handle resize-bottom" data-resize="bottom"></div>';
+
+        track.appendChild(card);
       });
 
-      var minutesSince13 = (now.getHours() * 60 + now.getMinutes()) - 780;
-      if (minutesSince13 < 0 || minutesSince13 > 390) return;
+      if (isToday) {
+        var minutesNow = today.getHours() * 60 + today.getMinutes();
+        if (minutesNow >= DAY_START && minutesNow <= DAY_END) {
+          var pct = ((minutesNow - DAY_START) / (DAY_END - DAY_START)) * 100;
+          var line = document.createElement('div');
+          line.className = 'now-line';
+          line.style.top = pct + '%';
+          track.appendChild(line);
+        }
+      }
+    });
+  }
 
-      var track = document.querySelector('.day-track[data-day="' + todayKey + '"]');
-      if (!track) return;
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
 
-      var pct = (minutesSince13 / 390) * 100;
-      var line = document.createElement('div');
-      line.className = 'now-line';
-      line.style.top = pct + '%';
-      track.appendChild(line);
+  /* ---------- week navigation ---------- */
+
+  function setWeek(monday) {
+    currentMonday = monday;
+    render();
+  }
+
+  document.getElementById('tabThisWeek').addEventListener('click', function () { setWeek(thisMonday); });
+  document.getElementById('tabNextWeek').addEventListener('click', function () { setWeek(addDays(thisMonday, 7)); });
+  document.getElementById('prevWeek').addEventListener('click', function () { setWeek(addDays(currentMonday, -7)); });
+  document.getElementById('nextWeek').addEventListener('click', function () { setWeek(addDays(currentMonday, 7)); });
+
+  document.getElementById('resetWeekBtn').addEventListener('click', function () {
+    var weekKey = weekKeyOf(currentMonday);
+    var ok = window.confirm('이 주를 정상 시간표로 되돌릴까요? 이 주에 적용한 수정 사항이 모두 사라집니다.');
+    if (!ok) return;
+    store[weekKey] = { events: cloneDefaultEvents(), customized: false };
+    saveStore();
+    render();
+  });
+
+  /* ---------- drag / resize ---------- */
+
+  // While a card is pointer-captured, we must not replace it via render() —
+  // doing so implicitly releases capture and silently kills the drag mid-gesture.
+  // So during a drag we mutate the one dragged DOM node directly, and only
+  // call render() once, on drop, to settle everyone into their final layout.
+  var dragState = null;
+
+  timetable.addEventListener('pointerdown', function (e) {
+    var delBtn = e.target.closest('[data-del]');
+    if (delBtn) return; // handled by click listener below
+
+    var card = e.target.closest('.block');
+    if (!card) return;
+
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    var ev = weekData.events.find(function (x) { return x.id === card.dataset.id; });
+    if (!ev) return;
+
+    var resizeEl = e.target.closest('[data-resize]');
+    var mode = resizeEl ? (resizeEl.dataset.resize === 'top' ? 'resize-top' : 'resize-bottom') : 'move';
+
+    dragState = {
+      id: ev.id,
+      mode: mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      origStart: ev.start,
+      origEnd: ev.end,
+      origDay: ev.day,
+      moved: false,
+      cardEl: card,
+      currentDay: ev.day
+    };
+    card.setPointerCapture(e.pointerId);
+    card.classList.add('dragging');
+    e.preventDefault();
+  });
+
+  timetable.addEventListener('pointermove', function (e) {
+    if (!dragState) return;
+    var dx = e.clientX - dragState.startX;
+    var dy = e.clientY - dragState.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
+    if (!dragState.moved) return;
+
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    var ev = weekData.events.find(function (x) { return x.id === dragState.id; });
+    if (!ev) return;
+
+    var deltaMin = Math.round((dy / PX_PER_MIN) / SNAP) * SNAP;
+
+    if (dragState.mode === 'move') {
+      var dur = dragState.origEnd - dragState.origStart;
+      var newStart = clamp(dragState.origStart + deltaMin, DAY_START, DAY_END - dur);
+      ev.start = newStart;
+      ev.end = newStart + dur;
+
+      var under = document.elementsFromPoint(e.clientX, e.clientY).find(function (el) {
+        return el.classList && el.classList.contains('day-track');
+      });
+      ev.day = under ? under.dataset.day : dragState.origDay;
+
+      if (ev.day !== dragState.currentDay) {
+        var newTrack = document.querySelector('.day-track[data-day="' + ev.day + '"]');
+        if (newTrack) {
+          newTrack.appendChild(dragState.cardEl);
+          dragState.currentDay = ev.day;
+          dragState.cardEl.style.left = '3px';
+          dragState.cardEl.style.width = 'calc(100% - 6px)';
+        }
+      }
+    } else if (dragState.mode === 'resize-bottom') {
+      ev.end = clamp(dragState.origEnd + deltaMin, dragState.origStart + MIN_DUR, DAY_END);
+    } else if (dragState.mode === 'resize-top') {
+      ev.start = clamp(dragState.origStart + deltaMin, DAY_START, dragState.origEnd - MIN_DUR);
     }
 
-    paintNow();
-    setInterval(paintNow, 60000);
-  })();
+    var top = ((ev.start - DAY_START) / (DAY_END - DAY_START)) * 720;
+    var height = ((ev.end - ev.start) / (DAY_END - DAY_START)) * 720;
+    dragState.cardEl.style.top = top + 'px';
+    dragState.cardEl.style.height = Math.max(height, 15) + 'px';
+    dragState.cardEl.classList.toggle('compact', (ev.end - ev.start) < 25);
+    var timeEl = dragState.cardEl.querySelector('.time');
+    if (timeEl) timeEl.textContent = minToClock(ev.start) + '–' + minToClock(ev.end);
+  });
+
+  function endDrag(e) {
+    if (!dragState) return;
+    var wasClick = !dragState.moved && dragState.mode === 'move';
+    var id = dragState.id;
+    var moved = dragState.moved;
+    dragState.cardEl.classList.remove('dragging');
+    dragState = null;
+
+    if (wasClick) {
+      openEditModal(id);
+    } else if (moved) {
+      var weekData = getWeekData(weekKeyOf(currentMonday));
+      weekData.customized = true;
+      saveStore();
+    }
+    render();
+  }
+
+  timetable.addEventListener('pointerup', endDrag);
+  timetable.addEventListener('pointercancel', endDrag);
+
+  timetable.addEventListener('click', function (e) {
+    var delBtn = e.target.closest('[data-del]');
+    if (!delBtn) return;
+    e.stopPropagation();
+    var id = delBtn.dataset.del;
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    weekData.events = weekData.events.filter(function (x) { return x.id !== id; });
+    weekData.customized = true;
+    saveStore();
+    render();
+  });
+
+  timetable.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest('.block');
+    if (!card) return;
+    e.preventDefault();
+    openEditModal(card.dataset.id);
+  });
+
+  /* ---------- add / edit modal ---------- */
+
+  var overlay = document.getElementById('modalOverlay');
+  var modalTitle = document.getElementById('modalTitle');
+  var fName = document.getElementById('fName');
+  var fCat = document.getElementById('fCat');
+  var fDay = document.getElementById('fDay');
+  var fStart = document.getElementById('fStart');
+  var fEnd = document.getElementById('fEnd');
+  var formError = document.getElementById('formError');
+  var deleteBtn = document.getElementById('deleteBtn');
+  var editingId = null;
+
+  Object.keys(CATS).forEach(function (key) {
+    var opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = CATS[key];
+    fCat.appendChild(opt);
+  });
+
+  function openModal() {
+    overlay.style.display = 'flex';
+    formError.textContent = '';
+    setTimeout(function () { fName.focus(); }, 0);
+  }
+  function closeModal() {
+    overlay.style.display = 'none';
+    editingId = null;
+  }
+
+  function openAddModal() {
+    editingId = null;
+    modalTitle.textContent = '일정 추가';
+    deleteBtn.style.display = 'none';
+    fName.value = '';
+    fCat.value = 'etc';
+    fDay.value = currentMonday && DAY_KEYS.indexOf('mon') >= 0 ? 'mon' : 'mon';
+    fStart.value = '15:00';
+    fEnd.value = '16:00';
+    openModal();
+  }
+
+  function openEditModal(id) {
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    var ev = weekData.events.find(function (x) { return x.id === id; });
+    if (!ev) return;
+    editingId = id;
+    modalTitle.textContent = '일정 수정';
+    deleteBtn.style.display = '';
+    fName.value = ev.name;
+    fCat.value = ev.cat;
+    fDay.value = ev.day;
+    fStart.value = minToClock(ev.start);
+    fEnd.value = minToClock(ev.end);
+    openModal();
+  }
+
+  document.getElementById('addEventBtn').addEventListener('click', openAddModal);
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && overlay.style.display !== 'none') closeModal();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', function () {
+    var name = fName.value.trim();
+    if (!name) { formError.textContent = '이름을 입력해 주세요.'; return; }
+    var start = clockToMin(fStart.value);
+    var end = clockToMin(fEnd.value);
+    if (isNaN(start) || isNaN(end)) { formError.textContent = '시간을 입력해 주세요.'; return; }
+    if (end - start < MIN_DUR) { formError.textContent = '종료 시간은 시작보다 최소 10분 이후여야 해요.'; return; }
+    start = clamp(Math.round(start / SNAP) * SNAP, 0, 1430);
+    end = clamp(Math.round(end / SNAP) * SNAP, 0, 1440);
+
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    if (editingId) {
+      var ev = weekData.events.find(function (x) { return x.id === editingId; });
+      ev.name = name; ev.cat = fCat.value; ev.day = fDay.value; ev.start = start; ev.end = end;
+    } else {
+      weekData.events.push({ id: makeId(), name: name, cat: fCat.value, day: fDay.value, start: start, end: end });
+    }
+    weekData.customized = true;
+    saveStore();
+    closeModal();
+    render();
+  });
+
+  deleteBtn.addEventListener('click', function () {
+    if (!editingId) return;
+    var weekData = getWeekData(weekKeyOf(currentMonday));
+    weekData.events = weekData.events.filter(function (x) { return x.id !== editingId; });
+    weekData.customized = true;
+    saveStore();
+    closeModal();
+    render();
+  });
+
+  /* ---------- init ---------- */
+
+  buildAxis();
+  render();
+  setInterval(function () {
+    today = new Date();
+    render();
+  }, 60000);
+})();
 </script>
 </body>
 </html>

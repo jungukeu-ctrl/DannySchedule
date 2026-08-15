@@ -220,6 +220,19 @@
     color: var(--care-ink);
   }
 
+  .badge.sync {
+    background: var(--bg-sunken);
+    color: var(--ink-soft);
+  }
+  .badge.sync.ok {
+    background: var(--pc-bg);
+    color: var(--pc-ink);
+  }
+  .badge.sync.off {
+    background: var(--tkd-bg);
+    color: var(--tkd-ink);
+  }
+
   .week-bar-spacer { flex: 1 1 auto; }
 
   .toolbar-actions {
@@ -626,6 +639,7 @@
     </div>
     <button class="nav-arrow" id="nextWeek" type="button" aria-label="다음 주">›</button>
     <div class="week-bar-spacer"></div>
+    <span class="badge sync" id="syncBadge">연결 중…</span>
     <div class="toolbar-actions">
       <button class="btn btn-ghost" id="resetWeekBtn" type="button">정상 시간표로 초기화</button>
       <button class="btn btn-primary" id="addEventBtn" type="button">+ 일정 추가</button>
@@ -660,7 +674,7 @@
     </div>
   </div>
 
-  <p class="note">※ 이 브라우저에만 저장됩니다(다른 기기·브라우저와 공유되지 않아요). 빨간 선은 오늘, 지금 시각을 나타냅니다.</p>
+  <p class="note">※ 위 상태 표시가 "실시간 동기화"이면 다른 기기·브라우저와 시간표가 함께 업데이트됩니다. 빨간 선은 오늘, 지금 시각을 나타냅니다.</p>
 
 </div>
 
@@ -710,9 +724,23 @@
   </div>
 </div>
 
-<script>
-(function () {
+<script type="module">
   "use strict";
+
+  // Loaded lazily inside initCloud() via dynamic import() — a static top-level
+  // import would fail (and take the whole page down with it, since ES module
+  // evaluation is all-or-nothing) whenever the Firebase CDN is unreachable
+  // (offline, ad-blocker, restrictive network). The app must still work
+  // local-only in that case.
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyCW1Lx2NMZyEPF9Mq0z3Jsv5MoCG4TwFRU",
+    authDomain: "danny-schedule.firebaseapp.com",
+    projectId: "danny-schedule",
+    storageBucket: "danny-schedule.firebasestorage.app",
+    messagingSenderId: "706600079832",
+    appId: "1:706600079832:web:c02c563a91793eb25da2ad"
+  };
 
   var DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
   var DAY_LABELS = { mon: '월', tue: '화', wed: '수', thu: '목', fri: '금' };
@@ -818,6 +846,92 @@
       saveStore();
     }
     return store[weekKey];
+  }
+
+  /* ---------- cloud sync (Firebase) ----------
+     Firestore is the shared source of truth across devices; localStorage
+     stays as an instant-local cache and offline fallback. Writes update
+     `store` immediately (optimistic) and are pushed to Firestore; a
+     realtime listener on the viewed week's doc pulls in changes made
+     from any other device/browser. */
+
+  var cloudEnabled = false;
+  var db = null;
+  var fsDoc = null, fsSetDoc = null, fsOnSnapshot = null;
+  var unsubscribeWeek = null;
+
+  function initCloud() {
+    return Promise.race([
+      loadCloud(),
+      new Promise(function (resolve) { setTimeout(resolve, 6000); }) // never hang the UI
+    ]).catch(function (e) {
+      console.warn('Cloud sync unavailable, staying local-only.', e);
+    });
+  }
+
+  function loadCloud() {
+    return Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js')
+    ]).then(function (mods) {
+      var appMod = mods[0], authMod = mods[1], fsMod = mods[2];
+      var app = appMod.initializeApp(firebaseConfig);
+      var auth = authMod.getAuth(app);
+      return new Promise(function (resolve, reject) {
+        authMod.onAuthStateChanged(auth, function (user) {
+          if (!user) return;
+          db = fsMod.getFirestore(app);
+          fsDoc = fsMod.doc;
+          fsSetDoc = fsMod.setDoc;
+          fsOnSnapshot = fsMod.onSnapshot;
+          cloudEnabled = true;
+          resolve();
+        });
+        authMod.signInAnonymously(auth).catch(reject);
+      });
+    });
+  }
+
+  function updateSyncBadge() {
+    var el = document.getElementById('syncBadge');
+    if (cloudEnabled) {
+      el.textContent = '☁ 실시간 동기화';
+      el.className = 'badge sync ok';
+    } else {
+      el.textContent = '⚠ 이 기기에만 저장';
+      el.className = 'badge sync off';
+    }
+  }
+
+  function subscribeWeek(weekKey) {
+    if (unsubscribeWeek) { unsubscribeWeek(); unsubscribeWeek = null; }
+    if (!cloudEnabled) return;
+
+    var ref = fsDoc(db, 'weeks', weekKey);
+    unsubscribeWeek = fsOnSnapshot(ref, function (snap) {
+      if (weekKeyOf(currentMonday) !== weekKey) return; // stale listener from a since-left week
+      if (snap.exists()) {
+        store[weekKey] = snap.data();
+        saveStore();
+        render();
+      } else {
+        var fresh = { events: cloneDefaultEvents(), customized: false };
+        store[weekKey] = fresh;
+        fsSetDoc(ref, fresh).catch(function (e) { console.warn('cloud seed failed', e); });
+        render();
+      }
+    }, function (err) {
+      console.warn('Cloud listen error, edits will stay local-only for now.', err);
+    });
+  }
+
+  function persistWeek(weekKey) {
+    saveStore();
+    if (!cloudEnabled) return;
+    fsSetDoc(fsDoc(db, 'weeks', weekKey), store[weekKey]).catch(function (e) {
+      console.warn('Cloud sync failed, change is saved locally only.', e);
+    });
   }
 
   /* ---------- state ---------- */
@@ -966,6 +1080,7 @@
   function setWeek(monday) {
     currentMonday = monday;
     render();
+    if (cloudEnabled) subscribeWeek(weekKeyOf(currentMonday));
   }
 
   document.getElementById('tabThisWeek').addEventListener('click', function () { setWeek(thisMonday); });
@@ -978,7 +1093,7 @@
     var ok = window.confirm('이 주를 정상 시간표로 되돌릴까요? 이 주에 적용한 수정 사항이 모두 사라집니다.');
     if (!ok) return;
     store[weekKey] = { events: cloneDefaultEvents(), customized: false };
-    saveStore();
+    persistWeek(weekKey);
     render();
   });
 
@@ -1082,7 +1197,7 @@
     } else if (moved) {
       var weekData = getWeekData(weekKeyOf(currentMonday));
       weekData.customized = true;
-      saveStore();
+      persistWeek(weekKeyOf(currentMonday));
     }
     render();
   }
@@ -1098,7 +1213,7 @@
     var weekData = getWeekData(weekKeyOf(currentMonday));
     weekData.events = weekData.events.filter(function (x) { return x.id !== id; });
     weekData.customized = true;
-    saveStore();
+    persistWeek(weekKeyOf(currentMonday));
     render();
   });
 
@@ -1192,7 +1307,7 @@
       weekData.events.push({ id: makeId(), name: name, cat: fCat.value, day: fDay.value, start: start, end: end });
     }
     weekData.customized = true;
-    saveStore();
+    persistWeek(weekKeyOf(currentMonday));
     closeModal();
     render();
   });
@@ -1202,7 +1317,7 @@
     var weekData = getWeekData(weekKeyOf(currentMonday));
     weekData.events = weekData.events.filter(function (x) { return x.id !== editingId; });
     weekData.customized = true;
-    saveStore();
+    persistWeek(weekKeyOf(currentMonday));
     closeModal();
     render();
   });
@@ -1215,7 +1330,11 @@
     today = new Date();
     render();
   }, 60000);
-})();
+
+  initCloud().then(function () {
+    updateSyncBadge();
+    if (cloudEnabled) subscribeWeek(weekKeyOf(currentMonday));
+  });
 </script>
 </body>
 </html>

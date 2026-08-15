@@ -233,6 +233,80 @@
     color: var(--tkd-ink);
   }
 
+  .mode-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .mode-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+  }
+
+  .mode-track {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    border-radius: 20px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    flex: none;
+    transition: background 0.15s ease;
+  }
+
+  .mode-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink-soft);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .mode-switch input:checked + .mode-track {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .mode-switch input:checked + .mode-track .mode-thumb {
+    transform: translateX(16px);
+    background: var(--accent-ink);
+  }
+  .mode-switch input:focus-visible + .mode-track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .mode-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .mode-switch input:checked ~ .mode-label {
+    color: var(--ink);
+  }
+
+  /* Editing affordances (drag, resize, delete, add/reset) are hidden until
+     edit mode is switched on — otherwise a touch-scroll or tap on a card
+     while just viewing the schedule gets misread as a drag/edit gesture. */
+
+  #toolbarActions { display: none; }
+  body.edit-mode #toolbarActions { display: flex; }
+
+  .del-btn, .resize-handle { display: none; }
+  body.edit-mode .del-btn { display: flex; }
+  body.edit-mode .resize-handle { display: block; }
+
+  .block { cursor: default; touch-action: auto; }
+  body.edit-mode .block { cursor: grab; touch-action: none; }
+  body.edit-mode .block:active { cursor: grabbing; }
+
   .week-bar-spacer { flex: 1 1 auto; }
 
   .toolbar-actions {
@@ -429,12 +503,9 @@
     flex-direction: column;
     gap: 1px;
     line-height: 1.25;
-    cursor: grab;
-    touch-action: none;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.02);
   }
 
-  .block:active { cursor: grabbing; }
   .block.dragging { opacity: 0.85; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
 
   .block .name {
@@ -487,7 +558,6 @@
     color: inherit;
     font-size: 10px;
     line-height: 1;
-    display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
@@ -640,13 +710,18 @@
     <button class="nav-arrow" id="nextWeek" type="button" aria-label="다음 주">›</button>
     <div class="week-bar-spacer"></div>
     <span class="badge sync" id="syncBadge">연결 중…</span>
-    <div class="toolbar-actions">
+    <label class="mode-switch">
+      <input type="checkbox" id="editModeToggle">
+      <span class="mode-track"><span class="mode-thumb"></span></span>
+      <span class="mode-label" id="modeLabel">보기 모드</span>
+    </label>
+    <div class="toolbar-actions" id="toolbarActions">
       <button class="btn btn-ghost" id="resetWeekBtn" type="button">정상 시간표로 초기화</button>
       <button class="btn btn-primary" id="addEventBtn" type="button">+ 일정 추가</button>
     </div>
   </div>
 
-  <p class="hint">카드를 드래그하면 시간·요일이 바뀌고, 위/아래 끝을 늘이면 시간 길이가 바뀝니다. 카드를 클릭하면 정확한 시간으로 직접 수정할 수 있어요.</p>
+  <p class="hint" id="hintText"></p>
 
   <div class="legend" id="legend">
     <div class="legend-item"><span class="dot" style="background:var(--care-ink)"></span>학교돌봄</div>
@@ -973,6 +1048,33 @@
   var axisTrack = document.getElementById('axisTrack');
   var timetable = document.getElementById('timetable');
 
+  /* ---------- view / edit mode ----------
+     Defaults to view mode on every load: a touch that lands on a card while
+     someone's just scrolling to check the schedule must never be read as a
+     drag. Only flipping the switch unlocks drag/resize/delete/add. */
+
+  var editMode = false;
+  var editModeToggle = document.getElementById('editModeToggle');
+  var modeLabel = document.getElementById('modeLabel');
+  var hintText = document.getElementById('hintText');
+
+  var HINT_VIEW = '지금은 보기 모드예요. 시간표를 고치려면 위의 스위치를 눌러 수정 모드로 바꿔주세요.';
+  var HINT_EDIT = '카드를 드래그하면 시간·요일이 바뀌고, 위/아래 끝을 늘이면 시간 길이가 바뀝니다. 카드를 클릭하면 정확한 시간으로 직접 수정할 수 있어요.';
+
+  function updateModeUI() {
+    document.body.classList.toggle('edit-mode', editMode);
+    modeLabel.textContent = editMode ? '수정 모드' : '보기 모드';
+    hintText.textContent = editMode ? HINT_EDIT : HINT_VIEW;
+  }
+
+  editModeToggle.addEventListener('change', function () {
+    editMode = editModeToggle.checked;
+    updateModeUI();
+    render();
+  });
+
+  updateModeUI();
+
   function buildAxis() {
     axisTrack.innerHTML = '';
     for (var t = DAY_START; t <= DAY_END; t += 30) {
@@ -1039,8 +1141,8 @@
         var card = document.createElement('div');
         card.className = 'block cat-' + ev.cat + ((ev.end - ev.start) < 25 ? ' compact' : '');
         card.dataset.id = ev.id;
-        card.tabIndex = 0;
-        card.setAttribute('role', 'button');
+        card.tabIndex = editMode ? 0 : -1;
+        card.setAttribute('role', editMode ? 'button' : 'presentation');
         card.style.top = top + 'px';
         card.style.height = Math.max(height, 15) + 'px';
         card.style.left = 'calc(' + leftPct + '% + 3px)';
@@ -1106,6 +1208,8 @@
   var dragState = null;
 
   timetable.addEventListener('pointerdown', function (e) {
+    if (!editMode) return; // view mode: let touches/clicks pass through as plain scrolling/tapping
+
     var delBtn = e.target.closest('[data-del]');
     if (delBtn) return; // handled by click listener below
 
@@ -1206,6 +1310,7 @@
   timetable.addEventListener('pointercancel', endDrag);
 
   timetable.addEventListener('click', function (e) {
+    if (!editMode) return;
     var delBtn = e.target.closest('[data-del]');
     if (!delBtn) return;
     e.stopPropagation();
@@ -1218,6 +1323,7 @@
   });
 
   timetable.addEventListener('keydown', function (e) {
+    if (!editMode) return;
     if (e.key !== 'Enter' && e.key !== ' ') return;
     var card = e.target.closest('.block');
     if (!card) return;

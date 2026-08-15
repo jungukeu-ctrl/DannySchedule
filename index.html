@@ -293,19 +293,15 @@
   }
 
   /* Editing affordances (drag, resize, delete, add/reset) are hidden until
-     edit mode is switched on — otherwise a touch-scroll or tap on a card
-     while just viewing the schedule gets misread as a drag/edit gesture. */
+     edit mode is switched on. Cards are always plain-tap-to-open (never
+     drag/resize), so there's no touch-action override to worry about
+     either — a touch that turns into a scroll is simply never a click. */
 
   #toolbarActions { display: none; }
   body.edit-mode #toolbarActions { display: flex; }
 
-  .del-btn, .resize-handle { display: none; }
-  body.edit-mode .del-btn { display: flex; }
-  body.edit-mode .resize-handle { display: block; }
-
-  .block { cursor: default; touch-action: auto; }
-  body.edit-mode .block { cursor: grab; touch-action: none; }
-  body.edit-mode .block:active { cursor: grabbing; }
+  .block { cursor: default; }
+  body.edit-mode .block { cursor: pointer; }
 
   .week-bar-spacer { flex: 1 1 auto; }
 
@@ -497,7 +493,7 @@
   .block {
     position: absolute;
     border-radius: 8px;
-    padding: 5px 18px 5px 7px;
+    padding: 5px 7px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -505,8 +501,6 @@
     line-height: 1.25;
     box-shadow: 0 0 0 1px rgba(0,0,0,0.02);
   }
-
-  .block.dragging { opacity: 0.85; z-index: 5; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
 
   .block .name {
     font-size: 12px;
@@ -535,35 +529,6 @@
   .cat-hj   { background: var(--hj-bg);   color: var(--hj-ink); }
   .cat-sw   { background: var(--sw-bg);   color: var(--sw-ink); }
   .cat-etc  { background: var(--etc-bg);  color: var(--etc-ink); }
-
-  .resize-handle {
-    position: absolute;
-    left: 0;
-    right: 0;
-    height: 7px;
-    cursor: ns-resize;
-  }
-  .resize-top { top: 0; }
-  .resize-bottom { bottom: 0; }
-
-  .del-btn {
-    position: absolute;
-    top: 3px;
-    right: 3px;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0,0,0,0.12);
-    color: inherit;
-    font-size: 10px;
-    line-height: 1;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    opacity: 0.55;
-  }
-  .del-btn:hover { opacity: 1; background: rgba(0,0,0,0.22); }
 
   .now-line {
     position: absolute;
@@ -827,7 +792,6 @@
 
   var DAY_START = 720;   // 12:00
   var DAY_END = 1200;    // 20:00
-  var PX_PER_MIN = 1.5;
   var SNAP = 10;
   var MIN_DUR = 10;
 
@@ -1059,7 +1023,7 @@
   var hintText = document.getElementById('hintText');
 
   var HINT_VIEW = '지금은 보기 모드예요. 시간표를 고치려면 위의 스위치를 눌러 수정 모드로 바꿔주세요.';
-  var HINT_EDIT = '카드를 드래그하면 시간·요일이 바뀌고, 위/아래 끝을 늘이면 시간 길이가 바뀝니다. 카드를 클릭하면 정확한 시간으로 직접 수정할 수 있어요.';
+  var HINT_EDIT = '카드를 누르면 이름·분류·요일·시간을 수정하거나 삭제할 수 있는 창이 열립니다.';
 
   function updateModeUI() {
     document.body.classList.toggle('edit-mode', editMode);
@@ -1150,10 +1114,7 @@
 
         card.innerHTML =
           '<div class="name">' + escapeHtml(ev.name) + '</div>' +
-          '<div class="time">' + minToClock(ev.start) + '–' + minToClock(ev.end) + '</div>' +
-          '<button class="del-btn" type="button" aria-label="삭제" data-del="' + ev.id + '">×</button>' +
-          '<div class="resize-handle resize-top" data-resize="top"></div>' +
-          '<div class="resize-handle resize-bottom" data-resize="bottom"></div>';
+          '<div class="time">' + minToClock(ev.start) + '–' + minToClock(ev.end) + '</div>';
 
         track.appendChild(card);
       });
@@ -1199,127 +1160,19 @@
     render();
   });
 
-  /* ---------- drag / resize ---------- */
-
-  // While a card is pointer-captured, we must not replace it via render() —
-  // doing so implicitly releases capture and silently kills the drag mid-gesture.
-  // So during a drag we mutate the one dragged DOM node directly, and only
-  // call render() once, on drop, to settle everyone into their final layout.
-  var dragState = null;
-
-  timetable.addEventListener('pointerdown', function (e) {
-    if (!editMode) return; // view mode: let touches/clicks pass through as plain scrolling/tapping
-
-    var delBtn = e.target.closest('[data-del]');
-    if (delBtn) return; // handled by click listener below
-
-    var card = e.target.closest('.block');
-    if (!card) return;
-
-    var weekData = getWeekData(weekKeyOf(currentMonday));
-    var ev = weekData.events.find(function (x) { return x.id === card.dataset.id; });
-    if (!ev) return;
-
-    var resizeEl = e.target.closest('[data-resize]');
-    var mode = resizeEl ? (resizeEl.dataset.resize === 'top' ? 'resize-top' : 'resize-bottom') : 'move';
-
-    dragState = {
-      id: ev.id,
-      mode: mode,
-      startX: e.clientX,
-      startY: e.clientY,
-      origStart: ev.start,
-      origEnd: ev.end,
-      origDay: ev.day,
-      moved: false,
-      cardEl: card,
-      currentDay: ev.day
-    };
-    card.setPointerCapture(e.pointerId);
-    card.classList.add('dragging');
-    e.preventDefault();
-  });
-
-  timetable.addEventListener('pointermove', function (e) {
-    if (!dragState) return;
-    var dx = e.clientX - dragState.startX;
-    var dy = e.clientY - dragState.startY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragState.moved = true;
-    if (!dragState.moved) return;
-
-    var weekData = getWeekData(weekKeyOf(currentMonday));
-    var ev = weekData.events.find(function (x) { return x.id === dragState.id; });
-    if (!ev) return;
-
-    var deltaMin = Math.round((dy / PX_PER_MIN) / SNAP) * SNAP;
-
-    if (dragState.mode === 'move') {
-      var dur = dragState.origEnd - dragState.origStart;
-      var newStart = clamp(dragState.origStart + deltaMin, DAY_START, DAY_END - dur);
-      ev.start = newStart;
-      ev.end = newStart + dur;
-
-      var under = document.elementsFromPoint(e.clientX, e.clientY).find(function (el) {
-        return el.classList && el.classList.contains('day-track');
-      });
-      ev.day = under ? under.dataset.day : dragState.origDay;
-
-      if (ev.day !== dragState.currentDay) {
-        var newTrack = document.querySelector('.day-track[data-day="' + ev.day + '"]');
-        if (newTrack) {
-          newTrack.appendChild(dragState.cardEl);
-          dragState.currentDay = ev.day;
-          dragState.cardEl.style.left = '3px';
-          dragState.cardEl.style.width = 'calc(100% - 6px)';
-        }
-      }
-    } else if (dragState.mode === 'resize-bottom') {
-      ev.end = clamp(dragState.origEnd + deltaMin, dragState.origStart + MIN_DUR, DAY_END);
-    } else if (dragState.mode === 'resize-top') {
-      ev.start = clamp(dragState.origStart + deltaMin, DAY_START, dragState.origEnd - MIN_DUR);
-    }
-
-    var top = ((ev.start - DAY_START) / (DAY_END - DAY_START)) * 720;
-    var height = ((ev.end - ev.start) / (DAY_END - DAY_START)) * 720;
-    dragState.cardEl.style.top = top + 'px';
-    dragState.cardEl.style.height = Math.max(height, 15) + 'px';
-    dragState.cardEl.classList.toggle('compact', (ev.end - ev.start) < 25);
-    var timeEl = dragState.cardEl.querySelector('.time');
-    if (timeEl) timeEl.textContent = minToClock(ev.start) + '–' + minToClock(ev.end);
-  });
-
-  function endDrag(e) {
-    if (!dragState) return;
-    var wasClick = !dragState.moved && dragState.mode === 'move';
-    var id = dragState.id;
-    var moved = dragState.moved;
-    dragState.cardEl.classList.remove('dragging');
-    dragState = null;
-
-    if (wasClick) {
-      openEditModal(id);
-    } else if (moved) {
-      var weekData = getWeekData(weekKeyOf(currentMonday));
-      weekData.customized = true;
-      persistWeek(weekKeyOf(currentMonday));
-    }
-    render();
-  }
-
-  timetable.addEventListener('pointerup', endDrag);
-  timetable.addEventListener('pointercancel', endDrag);
+  /* ---------- tap-to-edit ----------
+     No drag or resize gestures at all: on a phone, a touch that lands on a
+     card while someone is just scrolling to find a class was being read as
+     a move/resize, silently changing the schedule. A plain click (which the
+     browser only fires for a tap that didn't turn into a scroll) is the
+     only way into a card, and it always opens the edit form — time, day,
+     and category changes (including deleting) all happen there instead. */
 
   timetable.addEventListener('click', function (e) {
     if (!editMode) return;
-    var delBtn = e.target.closest('[data-del]');
-    if (!delBtn) return;
-    e.stopPropagation();
-    var id = delBtn.dataset.del;
-    var weekData = getWeekData(weekKeyOf(currentMonday));
-    weekData.events = weekData.events.filter(function (x) { return x.id !== id; });
-    weekData.customized = true;
-    persistWeek(weekKeyOf(currentMonday));
-    render();
+    var card = e.target.closest('.block');
+    if (!card) return;
+    openEditModal(card.dataset.id);
   });
 
   timetable.addEventListener('keydown', function (e) {
